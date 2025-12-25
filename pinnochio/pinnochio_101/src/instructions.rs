@@ -16,6 +16,11 @@ pub struct Deposit<'a> {
     pub amount: u64,
 }
 
+pub struct Withdraw<'a> {
+    pub owner: &'a AccountInfo,
+    pub vault: &'a AccountInfo,
+}
+
 fn parse_amount(data: &[u8]) -> Result<u64, ProgramError> {
     if data.len() != core::mem::size_of::<u64>() {
         return Err(ProgramError::InvalidInstructionData);
@@ -41,7 +46,7 @@ fn check_vault(owner: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
     if vault.data_is_empty() {
         const ACCOUNT_DISCRIMINATOR_SIZE: usize = 8;
 
-       let (expected_vault, _bump) = derive_vault(owner);
+        let (expected_vault, _bump) = derive_vault(owner);
 
         // ensure the provided vault is same as the derived
         if vault.key() != &expected_vault {
@@ -73,7 +78,7 @@ fn check_vault(owner: &AccountInfo, vault: &AccountInfo) -> ProgramResult {
 }
 
 impl<'a> Deposit<'a> {
-    pub const DISCRIMINATOR: u8 = 0;
+    pub const DISCRIMINATOR: &'a u8 = &0;
 
     pub fn process(self) -> ProgramResult {
         let Deposit {
@@ -113,11 +118,71 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Deposit<'a> {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-
         Ok(Self {
             owner,
             vault,
             amount,
         })
+    }
+}
+
+impl<'a> Withdraw<'a> {
+    pub const DISCRIMINATOR:&'a u8= &1;
+
+    pub fn process(self) -> ProgramResult {
+        let Withdraw { owner, vault } = self;
+
+        if !owner.is_signer() {
+            return Err(ProgramError::InvalidAccountOwner);
+        }
+
+        if !vault.is_owned_by(&crate::ID) {
+            return Err(ProgramError::InvalidAccountOwner);
+        }
+
+        let (expected_vault_pda, _bump) = derive_vault(owner);
+        if vault.key() != &expected_vault_pda {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let data_len = vault.data_len();
+        let min_balance = Rent::get()?.minimum_balance(data_len);
+        let current = vault.lamports();
+
+        if current <= min_balance {
+            // avoid rent violations
+            return Err(ProgramError::InsufficientFunds);
+        }
+        let withdraw_amount = current - min_balance;
+
+        {
+            let mut vault_lamports = vault.try_borrow_mut_lamports()?;
+            *vault_lamports = vault_lamports
+                .checked_sub(withdraw_amount)
+                .ok_or(ProgramError::InsufficientFunds)?;
+        }
+
+        {
+            let mut owner_lamports = owner.try_borrow_mut_lamports()?;
+            *owner_lamports = owner_lamports
+                .checked_add(withdraw_amount)
+                .ok_or(ProgramError::InsufficientFunds)?;
+        }
+
+        log!("{} lamports withdrawn from vault", withdraw_amount);
+        Ok(())
+    }
+}
+
+impl<'a> TryFrom<&'a [AccountInfo]> for Withdraw<'a> {
+    type Error = ProgramError;
+
+    fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
+        if accounts.len() < 2 {
+            return Err(ProgramError::NotEnoughAccountKeys);
+        }
+        let owner = &accounts[0];
+        let vault = &accounts[1];
+        Ok(Self { owner, vault })
     }
 }
