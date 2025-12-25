@@ -1,10 +1,13 @@
 /Typescript/node_modules
+/Typescript/.env
+
 /anchor/spl-token/target
 /anchor/spl-token/node_modules
-/Typescript/.env
 /anchor/blueshift_anchor_flash_loan/target
 /anchor/blueshift_anchor_flash_loan/node_modules
 /anchor/blueshift_anchor_vault/target
 /anchor/blueshift_anchor_vault/node_modules
 /anchor/blueshift_anchor_escrow/target
 /anchor/blueshift_anchor_escrow/node_modules
+
+/pinnochio/pinnochio_101/target
