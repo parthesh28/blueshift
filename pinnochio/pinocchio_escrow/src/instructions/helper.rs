@@ -8,19 +8,16 @@ use pinocchio::{
 };
 use pinocchio_associated_token_account::instructions::Create;
 use pinocchio_system::instructions::CreateAccount;
-use pinocchio_token::instructions::{InitializeAccount3, InitializeMint2};
+use pinocchio_token::instructions::{InitializeMint2};
 
 use crate::PinocchioError;
 
-// Define a Trait
 pub trait AccountCheck {
     fn check(account: &AccountInfo) -> Result<(), ProgramError>;
 }
 
-// Define a Type
 pub struct SignerAccount;
 
-// Implement the trait for different Types
 impl SignerAccount {
     pub fn check(account: &AccountInfo) -> Result<(), ProgramError> {
         if !account.is_signer() {
@@ -83,10 +80,8 @@ impl MintInit for MintAccount {
         mint_authority: &[u8; 32],
         freeze_authority: Option<&[u8; 32]>,
     ) -> ProgramResult {
-        // Get required lamports for rent
         let lamports = Rent::get()?.minimum_balance(pinocchio_token::state::Mint::LEN);
 
-        // Fund the account with the required lamports
         CreateAccount {
             from: payer,
             to: account,
@@ -249,13 +244,10 @@ impl ProgramAccount {
         seeds: &[Seed<'a>],
         space: usize,
     ) -> ProgramResult {
-        // Get required lamports for rent
         let lamports = Rent::get()?.minimum_balance(space);
 
-        // Create signer with seeds slice
         let signer = [Signer::from(seeds)];
 
-        // Create the account
         CreateAccount {
             from: payer,
             to: account,
@@ -281,7 +273,7 @@ impl ProgramAccount {
         }
 
         *destination.try_borrow_mut_lamports()? += *account.try_borrow_lamports()?;
-        account.realloc(1, true)?;
+        account.resize( 1)?;
         account.close()
     }
 }
