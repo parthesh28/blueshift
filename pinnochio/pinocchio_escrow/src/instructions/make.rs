@@ -32,7 +32,6 @@ impl<'a> TryFrom<&'a [AccountInfo]> for MakeAccounts<'a> {
         MintAccount::check(mint_b)?;
         AssociatedTokenAccount::check(maker_ata_a, maker, mint_a, token_program)?;
 
-        // Return the accounts
         Ok(Self {
             maker,
             escrow,

@@ -36,7 +36,6 @@ impl<'a> TryFrom<&'a [AccountInfo]> for TakeAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Basic Accounts Checks
         SignerAccount::check(taker)?;
         ProgramAccount::check(escrow)?;
         MintAccount::check(mint_a)?;
@@ -44,7 +43,6 @@ impl<'a> TryFrom<&'a [AccountInfo]> for TakeAccounts<'a> {
         AssociatedTokenAccount::check(taker_ata_b, taker, mint_b, token_program)?;
         AssociatedTokenAccount::check(vault, escrow, mint_a, token_program)?;
 
-        // Return the accounts
         Ok(Self {
             taker,
             maker,

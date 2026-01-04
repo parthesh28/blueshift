@@ -77,8 +77,6 @@ impl<'a> Refund<'a> {
     pub fn process(&mut self) -> ProgramResult {
         let data = self.accounts.escrow.try_borrow_data()?;
         let escrow = Escrow::load(&data)?;
-
-        // Check if the escrow is valid
         let escrow_key = create_program_address(
             &[
                 b"escrow",
@@ -88,6 +86,7 @@ impl<'a> Refund<'a> {
             ],
             &crate::ID,
         )?;
+        
         if &escrow_key != self.accounts.escrow.key() {
             return Err(ProgramError::InvalidAccountOwner);
         }
