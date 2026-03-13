@@ -1,5 +1,5 @@
-/Typescript/node_modules
-/Typescript/.env
+/typescript/node_modules
+/typescript/.env
 
 /anchor/spl-token/target
 /anchor/spl-token/node_modules
